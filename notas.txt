@@ -1,0 +1,5 @@
+python -m venv webapp
+webapp\Scripts\activate
+pip install flask
+
+Since the app seems relatively simple (a few selection inputs and displaying images), Flask might be lighter and easier to set up.
