@@ -81,5 +81,5 @@ Now App.jsx
 
 - Start the Flask backend
 - Open a second terminal and navigate to your frontend folder:
-    `cd frontend`
-    `npm run dev`
+    cd frontend
+    npm run dev

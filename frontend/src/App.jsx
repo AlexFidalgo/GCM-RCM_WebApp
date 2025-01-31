@@ -10,6 +10,7 @@ function App() {
     const [availableMetrics, setAvailableMetrics] = useState([]);
     const [selectedMetric, setSelectedMetric] = useState("");
     const [fileData, setFileData] = useState(null);
+    const [mapKey, setMapKey] = useState(0); // Unique key to force re-render
 
     useEffect(() => {
         if (selectedRegion && selectedVariable) {
@@ -17,10 +18,13 @@ function App() {
                 .then(response => {
                     setAvailableMetrics(response.data.metrics);
                     setSelectedMetric(""); // Reset metric selection when region or variable changes
+                    setFileData(null); // Clear map data when changing region or variable
+                    setMapKey(prevKey => prevKey + 1); // Force re-render
                 })
                 .catch(error => {
                     console.error("Error fetching metrics:", error);
                     setAvailableMetrics([]);
+                    setFileData(null);
                 });
         }
     }, [selectedRegion, selectedVariable]);
@@ -29,13 +33,18 @@ function App() {
         if (selectedRegion && selectedVariable && selectedMetric) {
             axios.get(`http://127.0.0.1:5000/load_csv?region=${selectedRegion}&physical_variable=${selectedVariable}&metric=${selectedMetric}`)
                 .then(response => {
+                    console.log("New data received for metric:", selectedMetric, response.data);
                     setFileData(response.data);
+                    setMapKey(prevKey => prevKey + 1); // Force re-render on data update
                 })
                 .catch(error => {
                     console.error("Error loading CSV file:", error);
+                    setFileData(null); // Clear map if data fetch fails
                 });
+        } else {
+            setFileData(null); // Clear map when metric changes to empty
         }
-    }, [selectedRegion, selectedVariable, selectedMetric]);
+    }, [selectedMetric]);
 
     return (
         <div>
@@ -63,7 +72,7 @@ function App() {
                             {fileData && (
                                 <div>
                                     <h2>Map Visualization</h2>
-                                    <MapContainer center={[45, 5]} zoom={5} style={{ height: "500px", width: "100%" }}>
+                                    <MapContainer key={mapKey} center={[45, 5]} zoom={5} style={{ height: "500px", width: "100%" }}>
                                         <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                                         {fileData.map((point, index) => (
                                             <CircleMarker
