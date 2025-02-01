@@ -48,56 +48,60 @@ function App() {
     }, [selectedMetric]);
 
     return (
-        <div>
-            <h1>Climate Data Viewer</h1>
-            <RegionSelector onRegionSelect={setSelectedRegion} />
-            {selectedRegion && (
-                <div>
-                    <p>Selected Region: {selectedRegion}</p>
-                    <label htmlFor="variable-select">Select Physical Variable:</label>
-                    <select id="variable-select" value={selectedVariable} onChange={(e) => setSelectedVariable(e.target.value)}>
-                        <option value="">-- Choose a Variable --</option>
-                        <option value="ppt">Precipitation (ppt)</option>
-                        <option value="tas">Temperature (tas)</option>
-                    </select>
-                    {selectedVariable && availableMetrics.length > 0 && (
-                        <div>
-                            <p>Selected Variable: {selectedVariable}</p>
-                            <label htmlFor="metric-select">Select Error Metric:</label>
-                            <select id="metric-select" value={selectedMetric} onChange={(e) => setSelectedMetric(decodeURIComponent(e.target.value))}>
-                                <option value="">-- Choose a Metric --</option>
-                                {availableMetrics.map(metric => (
-                                    <option key={metric} value={encodeURIComponent(metric)}>{metric}</option>
-                                ))}
-                            </select>
-                            {selectedMetric && <p>Selected Metric: {selectedMetric}</p>}
-                            {fileData && (
-                                <div>
-                                    <h2>Map Visualization</h2>
-                                    <MapContainer key={mapKey} center={[45, 5]} zoom={5} style={{ height: "500px", width: "100%" }}>
-                                        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                                        {fileData.map((point, index) => (
-                                            <CircleMarker
-                                                key={index}
-                                                center={[point.latitude, point.longitude]}
-                                                radius={5}
-                                                color={point.Interaction_effect ? "yellow" : point.GCM_effect ? "blue" : point.RCM_effect ? "red" : "green"}
-                                            >
-                                                <Tooltip>
-                                                    Gridpoint: {point.Gridpoint}<br />
-                                                    GCM Effect: {point.GCM_effect}<br />
-                                                    RCM Effect: {point.RCM_effect}<br />
-                                                    Interaction Effect: {point.Interaction_effect}
-                                                </Tooltip>
-                                            </CircleMarker>
-                                        ))}
-                                    </MapContainer>
-                                </div>
-                            )}
-                        </div>
-                    )}
-                </div>
-            )}
+        <div style={{ display: "flex", flexDirection: "row", alignItems: "flex-start", gap: "20px" }}>
+            <div style={{ width: "30%" }}>
+                <h1>Climate Data Viewer</h1>
+                <RegionSelector onRegionSelect={setSelectedRegion} />
+                {selectedRegion && (
+                    <div>
+                        <p>Selected Region: {selectedRegion}</p>
+                        <label htmlFor="variable-select">Select Physical Variable:</label>
+                        <select id="variable-select" value={selectedVariable} onChange={(e) => setSelectedVariable(e.target.value)}>
+                            <option value="">-- Choose a Variable --</option>
+                            <option value="ppt">Precipitation (ppt)</option>
+                            <option value="tas">Temperature (tas)</option>
+                        </select>
+                        {selectedVariable && availableMetrics.length > 0 && (
+                            <div>
+                                <p>Selected Variable: {selectedVariable}</p>
+                                <label htmlFor="metric-select">Select Error Metric:</label>
+                                <select id="metric-select" value={selectedMetric} onChange={(e) => setSelectedMetric(decodeURIComponent(e.target.value))}>
+                                    <option value="">-- Choose a Metric --</option>
+                                    {availableMetrics.map(metric => (
+                                        <option key={metric} value={encodeURIComponent(metric)}>{metric}</option>
+                                    ))}
+                                </select>
+                                {selectedMetric && <p>Selected Metric: {selectedMetric}</p>}
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
+            <div style={{ width: "70%" }}>
+                {fileData && (
+                    <div>
+                        <h2>Map Visualization</h2>
+                        <MapContainer key={mapKey} center={[45, 5]} zoom={5} style={{ height: "80vh", width: "100%" }}>
+                            <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                            {fileData.map((point, index) => (
+                                <CircleMarker
+                                    key={index}
+                                    center={[point.latitude, point.longitude]}
+                                    radius={5}
+                                    color={point.Interaction_effect ? "yellow" : point.GCM_effect ? "blue" : point.RCM_effect ? "red" : "green"}
+                                >
+                                    <Tooltip>
+                                        Gridpoint: {point.Gridpoint}<br />
+                                        GCM Effect: {point.GCM_effect}<br />
+                                        RCM Effect: {point.RCM_effect}<br />
+                                        Interaction Effect: {point.Interaction_effect}
+                                    </Tooltip>
+                                </CircleMarker>
+                            ))}
+                        </MapContainer>
+                    </div>
+                )}
+            </div>
         </div>
     );
 }
