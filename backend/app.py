@@ -4,6 +4,7 @@ import pandas as pd
 import re
 from flask import Flask, jsonify, request
 from flask_cors import CORS
+import urllib.parse
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -45,23 +46,24 @@ def list_metrics():
         return jsonify({'error': 'Region not found'}), 404
     
     try:
-        metric_pattern = re.compile(r"anova_effects_{}_{}_.*_(\w+)\.csv".format(re.escape(physical_variable), re.escape(region)))
-        metrics = set()
+        metric_pattern = re.compile(r"anova_effects_{}_{}_metric_\d+_(.+?)\.csv".format(re.escape(physical_variable), re.escape(region)))
+        metric_mapping = {}
         
         for file in os.listdir(region_path):
             match = metric_pattern.match(file)
             if match:
-                metrics.add(match.group(1))
+                metric_display_name = match.group(1)  # Capture only the metric name
+                metric_mapping[metric_display_name] = file  # Store full filename
         
-        if not metrics:
+        if not metric_mapping:
             return jsonify({'error': 'No metrics found'}), 404
         
-        return jsonify({'metrics': sorted(metrics)})
+        return jsonify({'metrics': sorted(metric_mapping.keys()), 'metric_mapping': metric_mapping})
     except Exception as e:
         logging.error(f"Error listing metrics for {region}, {physical_variable}: {str(e)}")
         return jsonify({'error': 'Could not list metrics'}), 500
 
-# The /load_csv route now automatically finds the correct CSV file
+# The /load_csv route now retrieves the correct full filename from the mapping
 @app.route('/load_csv', methods=['GET'])
 def load_csv():
     region = request.args.get('region')
@@ -76,16 +78,17 @@ def load_csv():
         return jsonify({'error': 'Region not found'}), 404
     
     try:
-        # Find the first matching file automatically
-        matching_files = [
-            f for f in os.listdir(region_path)
-            if f.startswith(f"anova_effects_{physical_variable}_") and f.endswith(f"_{metric_abbreviation}.csv")
-        ]
+        # Retrieve the metric mapping again (React does not send it)
+        metric_response = list_metrics()
+        if 'metrics' not in metric_response.json or 'metric_mapping' not in metric_response.json:
+            return jsonify({'error': 'Could not retrieve metric mapping'}), 500
         
-        if not matching_files:
+        metric_mapping = metric_response.json['metric_mapping']
+        filename = metric_mapping.get(metric_abbreviation)
+        if not filename:
             return jsonify({'error': 'No matching file found'}), 404
         
-        file_path = os.path.join(region_path, matching_files[0])
+        file_path = os.path.join(region_path, filename)
         
         df = pd.read_csv(file_path)
         return jsonify(df.to_dict(orient='records'))

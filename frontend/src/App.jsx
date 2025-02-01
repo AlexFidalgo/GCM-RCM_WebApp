@@ -31,7 +31,8 @@ function App() {
 
     useEffect(() => {
         if (selectedRegion && selectedVariable && selectedMetric) {
-            axios.get(`http://127.0.0.1:5000/load_csv?region=${selectedRegion}&physical_variable=${selectedVariable}&metric=${selectedMetric}`)
+            const encodedMetric = encodeURIComponent(selectedMetric); // Encode spaces
+            axios.get(`http://127.0.0.1:5000/load_csv?region=${selectedRegion}&physical_variable=${selectedVariable}&metric=${encodedMetric}`)
                 .then(response => {
                     console.log("New data received for metric:", selectedMetric, response.data);
                     setFileData(response.data);
@@ -63,12 +64,13 @@ function App() {
                         <div>
                             <p>Selected Variable: {selectedVariable}</p>
                             <label htmlFor="metric-select">Select Error Metric:</label>
-                            <select id="metric-select" value={selectedMetric} onChange={(e) => setSelectedMetric(e.target.value)}>
+                            <select id="metric-select" value={selectedMetric} onChange={(e) => setSelectedMetric(decodeURIComponent(e.target.value))}>
                                 <option value="">-- Choose a Metric --</option>
                                 {availableMetrics.map(metric => (
-                                    <option key={metric} value={metric}>{metric}</option>
+                                    <option key={metric} value={encodeURIComponent(metric)}>{metric}</option>
                                 ))}
                             </select>
+                            {selectedMetric && <p>Selected Metric: {selectedMetric}</p>}
                             {fileData && (
                                 <div>
                                     <h2>Map Visualization</h2>
