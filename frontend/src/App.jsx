@@ -67,7 +67,7 @@ function App() {
     return (
         <div style={{ display: "flex", flexDirection: "row", alignItems: "flex-start", gap: "20px", width: "100vw" }}>
             <div style={{ width: "25%" }}>
-                <h1>Climate Data Viewer</h1>
+                <h1>ANOVA Effects</h1>
                 <RegionSelector onRegionSelect={setSelectedRegion} />
                 {selectedRegion && (
                     <div>
@@ -97,8 +97,7 @@ function App() {
             <div style={{ flexGrow: 1 }}>
                 {fileData && (
                     <div>
-                        <h2>Map Visualization</h2>
-                        <MapContainer key={mapKey} center={[45, 5]} zoom={5} style={{ height: "80vh", width: "100%" }}>
+                        <MapContainer key={mapKey} center={[45, 5]} zoom={5} style={{ height: "92vh", width: "100%" }}>
                             <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                             <LayerGroup>
                                 {fileData.map((point, index) => (
