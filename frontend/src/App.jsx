@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import RegionSelector from "./components/RegionSelector";
 import axios from "axios";
-import { MapContainer, TileLayer, CircleMarker, Tooltip } from "react-leaflet";
+import { MapContainer, TileLayer, CircleMarker, Tooltip, LayerGroup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 
 function App() {
@@ -47,6 +47,23 @@ function App() {
         }
     }, [selectedMetric]);
 
+    // Define category colors matching the Python plot
+    const categoryColors = {
+        "Interaction": "yellow",
+        "Only GCM": "blue",
+        "Only RCM": "red",
+        "RCM and GCM": "purple",
+        "None": "green"
+    };
+
+    const categorizeData = (point) => {
+        if (point.Interaction_effect) return "Interaction";
+        if (point.GCM_effect && !point.RCM_effect) return "Only GCM";
+        if (!point.GCM_effect && point.RCM_effect) return "Only RCM";
+        if (point.GCM_effect && point.RCM_effect) return "RCM and GCM";
+        return "None";
+    };
+
     return (
         <div style={{ display: "flex", flexDirection: "row", alignItems: "flex-start", gap: "20px", width: "100vw" }}>
             <div style={{ width: "25%" }}>
@@ -83,22 +100,35 @@ function App() {
                         <h2>Map Visualization</h2>
                         <MapContainer key={mapKey} center={[45, 5]} zoom={5} style={{ height: "80vh", width: "100%" }}>
                             <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                            {fileData.map((point, index) => (
-                                <CircleMarker
-                                    key={index}
-                                    center={[point.latitude, point.longitude]}
-                                    radius={5}
-                                    color={point.Interaction_effect ? "yellow" : point.GCM_effect ? "blue" : point.RCM_effect ? "red" : "green"}
-                                >
-                                    <Tooltip>
-                                        Gridpoint: {point.Gridpoint}<br />
-                                        GCM Effect: {point.GCM_effect}<br />
-                                        RCM Effect: {point.RCM_effect}<br />
-                                        Interaction Effect: {point.Interaction_effect}
-                                    </Tooltip>
-                                </CircleMarker>
-                            ))}
+                            <LayerGroup>
+                                {fileData.map((point, index) => (
+                                    <CircleMarker
+                                        key={index}
+                                        center={[point.latitude, point.longitude]}
+                                        radius={6}
+                                        fillColor={categoryColors[categorizeData(point)]}
+                                        color="black"
+                                        fillOpacity={0.8}
+                                        weight={1}
+                                    >
+                                        <Tooltip>
+                                            Gridpoint: {point.Gridpoint}<br />
+                                            GCM Effect: {point.GCM_effect}<br />
+                                            RCM Effect: {point.RCM_effect}<br />
+                                            Interaction Effect: {point.Interaction_effect}
+                                        </Tooltip>
+                                    </CircleMarker>
+                                ))}
+                            </LayerGroup>
                         </MapContainer>
+                        <div style={{ marginTop: "10px", display: "flex", justifyContent: "center", gap: "15px" }}>
+                            {Object.entries(categoryColors).map(([category, color]) => (
+                                <div key={category} style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+                                    <div style={{ width: "15px", height: "15px", backgroundColor: color, border: "1px solid black" }}></div>
+                                    <span>{category}</span>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 )}
             </div>
