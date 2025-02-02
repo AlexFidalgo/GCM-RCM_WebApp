@@ -48,8 +48,8 @@ function App() {
     }, [selectedMetric]);
 
     return (
-        <div style={{ display: "flex", flexDirection: "row", alignItems: "flex-start", gap: "20px" }}>
-            <div style={{ width: "30%" }}>
+        <div style={{ display: "flex", flexDirection: "row", alignItems: "flex-start", gap: "20px", width: "100vw" }}>
+            <div style={{ width: "25%" }}>
                 <h1>Climate Data Viewer</h1>
                 <RegionSelector onRegionSelect={setSelectedRegion} />
                 {selectedRegion && (
@@ -77,7 +77,7 @@ function App() {
                     </div>
                 )}
             </div>
-            <div style={{ width: "70%" }}>
+            <div style={{ flexGrow: 1 }}>
                 {fileData && (
                     <div>
                         <h2>Map Visualization</h2>
