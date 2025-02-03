@@ -99,6 +99,38 @@ def load_csv():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route("/best_models", methods=["GET"])
+def best_models():
+    region = request.args.get("region")
+    physical_variable = request.args.get("physical_variable")
+    metric_abbreviation = request.args.get("metric")
+
+    if not region or not physical_variable or not metric_abbreviation:
+        return jsonify({"error": "Region, physical_variable, and metric parameters are required"}), 400
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        query = read_sql_query("best_models.sql")
+        cursor.execute(query, (region, physical_variable, metric_abbreviation))
+
+        records = [
+            {
+                "Gridpoint": row[0],
+                "Best_GCM": row[1],
+                "Best_RCM": row[2],
+                "latitude": row[3],
+                "longitude": row[4]
+            }
+            for row in cursor.fetchall()
+        ]
+
+        conn.close()
+        return jsonify(records)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 # Run Flask app
 if __name__ == "__main__":
     app.run(debug=True)
