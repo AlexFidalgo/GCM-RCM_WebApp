@@ -83,3 +83,37 @@ Now App.jsx
 - Open a second terminal and navigate to your frontend folder:
     cd frontend
     npm run dev
+
+
+*PostgreSQL*
+
+psql -U postgres
+
+CREATE DATABASE climate_data;
+
+\c climate_data;
+
+CREATE USER climate_user WITH PASSWORD '***';
+
+GRANT ALL PRIVILEGES ON DATABASE climate_data TO climate_user;
+GRANT CONNECT ON DATABASE climate_data TO climate_user;
+GRANT USAGE ON SCHEMA public TO climate_user;
+GRANT INSERT, SELECT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO climate_user;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT INSERT, SELECT, UPDATE, DELETE ON TABLES TO climate_user;
+GRANT USAGE, SELECT, UPDATE ON SEQUENCE climate_metrics_id_seq TO climate_user;
+
+CREATE TABLE climate_metrics (
+    id SERIAL PRIMARY KEY,
+    gridpoint INTEGER NOT NULL,
+    gcm_effect INTEGER NOT NULL,
+    rcm_effect INTEGER NOT NULL,
+    interaction_effect INTEGER NOT NULL,
+    min_gcm TEXT,
+    min_rcm TEXT,
+    latitude FLOAT NOT NULL,
+    longitude FLOAT NOT NULL,
+    region TEXT NOT NULL,
+    physical_variable TEXT NOT NULL,
+    metric_abbreviation TEXT NOT NULL
+);
+
