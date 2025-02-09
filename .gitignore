@@ -1,5 +1,6 @@
 webapp
-backend/data
+backend/anova_data
+backend/complete_data
 
 # Node.js dependencies
 node_modules/
