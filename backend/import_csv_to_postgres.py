@@ -14,7 +14,7 @@ DB_HOST = os.getenv("DB_HOST")
 DB_PORT = os.getenv("DB_PORT")
 
 # Path to CSV files
-DATA_DIR = "backend/data"
+DATA_DIR = "backend/anova_data"
 
 # Connect to PostgreSQL
 conn = psycopg2.connect(
