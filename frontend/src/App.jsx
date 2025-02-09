@@ -91,7 +91,7 @@ function App() {
     return (
         <div style={{ display: "flex", height: "90vh", width: "100vw" }}>
             {/* Left Panel */}
-            <div style={{ width: "20%", padding: "20px", backgroundColor: "#222", color: "white" }}>
+            <div style={{ width: "20%", padding: "5px", backgroundColor: "#222", color: "white" }}>
                 <RegionSelector onRegionSelect={setSelectedRegion} />
 
                 {selectedRegion && (
@@ -133,7 +133,7 @@ function App() {
             </div>
 
             {/* Right: Map View */}
-            <div style={{ width: "80%", padding: "10px" }}>
+            <div style={{ width: "80%", padding: "1px 1px 1px 1px" }}>
             <MapContainer key={mapKey} center={[45, 5]} zoom={5} style={{ height: "85vh", width: "100%" }}>
                 <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
 
