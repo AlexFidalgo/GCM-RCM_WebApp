@@ -1,3 +1,8 @@
+- Start the Flask backend
+    python backend/app.py
+- Open a second terminal and navigate to your frontend folder:
+    (cd frontend && npm run dev)
+
 python -m venv webapp
 webapp\Scripts\activate
 pip install flask flask-cors pandas matplotlib cartopy
@@ -75,15 +80,6 @@ Now App.jsx
 - Uses the RegionSelector component to let users select a region.
 - Stores the selected region in useState.
 - Displays the selected region on the screen.
-
-
-*Accessing*
-
-- Start the Flask backend
-    python backend/app.py
-- Open a second terminal and navigate to your frontend folder:
-    (cd frontend && npm run dev)
-
 
 
 *PostgreSQL*
