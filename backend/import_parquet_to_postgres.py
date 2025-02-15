@@ -79,7 +79,7 @@ for region in os.listdir(DATA_DIR):
                 # Extract metadata from the filename (assuming the filename format includes underscores)
                 parts = file.split("_")
                 if len(parts) >= 6:
-                    physical_variable = parts[2]
+                    physical_variable = parts[1]
                     metric_abbreviation = parts[-1].replace(".parquet", "")
                     
                     # Process and insert Parquet data
