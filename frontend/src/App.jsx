@@ -26,7 +26,7 @@ function App() {
 
     useEffect(() => {
         if (selectedRegion && selectedVariable) {
-            axios.get(`http://127.0.0.1:5000/list_metrics?region=${selectedRegion}&physical_variable=${selectedVariable}`)
+            axios.get(`${process.env.REACT_APP_API_URL}/list_metrics?region=${selectedRegion}&physical_variable=${selectedVariable}`)
                 .then(response => {
                     setAvailableMetrics(response.data.metrics);
                     setSelectedMetric("");
@@ -47,7 +47,7 @@ function App() {
         if (selectedRegion && selectedVariable && selectedMetric) {
             const encodedMetric = encodeURIComponent(selectedMetric);
 
-            axios.get(`http://127.0.0.1:5000/load_csv?region=${selectedRegion}&physical_variable=${selectedVariable}&metric=${encodedMetric}`)
+            axios.get(`${process.env.REACT_APP_API_URL}/load_csv?region=${selectedRegion}&physical_variable=${selectedVariable}&metric=${encodedMetric}`)
                 .then(response => {
                     setFileData(response.data);
                     setMapKey(prevKey => prevKey + 1);
@@ -57,7 +57,7 @@ function App() {
                     setFileData(null);
                 });
 
-            axios.get(`http://127.0.0.1:5000/best_models?region=${selectedRegion}&physical_variable=${selectedVariable}&metric=${encodedMetric}`)
+            axios.get(`${process.env.REACT_APP_API_URL}/best_models?region=${selectedRegion}&physical_variable=${selectedVariable}&metric=${encodedMetric}`)
                 .then(response => {
                     setBestModelsData(response.data);
 
