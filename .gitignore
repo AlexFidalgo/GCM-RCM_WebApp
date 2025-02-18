@@ -37,3 +37,4 @@ __pycache__/
 *.log
 backend/webapp_env/
 database_dump
+notas2.md
