@@ -1,4 +1,0 @@
-- Start the Flask backend
-    python backend/app.py
-- Open a second terminal and navigate to your frontend folder:
-    (cd frontend && npm run dev)
