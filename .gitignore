@@ -35,3 +35,6 @@ __pycache__/
 
 # Miscellaneous
 *.log
+
+notas2.md
+backup.dump
