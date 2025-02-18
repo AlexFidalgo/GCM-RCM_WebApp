@@ -1,3 +1,4 @@
+App.jsx
 import { useState, useEffect } from "react";
 import RegionSelector from "./components/RegionSelector";
 import axios from "axios";
@@ -5,6 +6,8 @@ import { MapContainer, TileLayer, CircleMarker, Tooltip } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 
 function App() {
+    const API_URL = import.meta.env.VITE_API_URL;
+
     const [selectedRegion, setSelectedRegion] = useState("");
     const [selectedVariable, setSelectedVariable] = useState("");
     const [availableMetrics, setAvailableMetrics] = useState([]);
@@ -26,7 +29,7 @@ function App() {
 
     useEffect(() => {
         if (selectedRegion && selectedVariable) {
-            axios.get(`${process.env.REACT_APP_API_URL}/list_metrics?region=${selectedRegion}&physical_variable=${selectedVariable}`)
+            axios.get(`${API_URL}/list_metrics?region=${selectedRegion}&physical_variable=${selectedVariable}`)
                 .then(response => {
                     setAvailableMetrics(response.data.metrics);
                     setSelectedMetric("");
@@ -47,7 +50,7 @@ function App() {
         if (selectedRegion && selectedVariable && selectedMetric) {
             const encodedMetric = encodeURIComponent(selectedMetric);
 
-            axios.get(`${process.env.REACT_APP_API_URL}/load_csv?region=${selectedRegion}&physical_variable=${selectedVariable}&metric=${encodedMetric}`)
+            axios.get(`${API_URL}/load_csv?region=${selectedRegion}&physical_variable=${selectedVariable}&metric=${encodedMetric}`)
                 .then(response => {
                     setFileData(response.data);
                     setMapKey(prevKey => prevKey + 1);
@@ -57,7 +60,7 @@ function App() {
                     setFileData(null);
                 });
 
-            axios.get(`${process.env.REACT_APP_API_URL}/best_models?region=${selectedRegion}&physical_variable=${selectedVariable}&metric=${encodedMetric}`)
+            axios.get(`${API_URL}/best_models?region=${selectedRegion}&physical_variable=${selectedVariable}&metric=${encodedMetric}`)
                 .then(response => {
                     setBestModelsData(response.data);
 
@@ -154,7 +157,7 @@ function App() {
                 {/* Best GCM Models */}
                 {visualizationMode === "best_gcm" && bestModelsData && bestModelsData.map((point, index) => (
                     <CircleMarker key={index} center={[point.latitude, point.longitude]} radius={4}
-                        fillColor={gcmColorMap[point.Best_GCM] || "gray"} 
+                        fillColor={gcmColorMap[point.Best_GCM] || "gray"}
                         fillOpacity={1} stroke={false}>
                         <Tooltip>
                             Gridpoint: {point.Gridpoint}<br />
@@ -166,7 +169,7 @@ function App() {
                 {/* Best RCM Models */}
                 {visualizationMode === "best_rcm" && bestModelsData && bestModelsData.map((point, index) => (
                     <CircleMarker key={index} center={[point.latitude, point.longitude]} radius={4}
-                        fillColor={rcmColorMap[point.Best_RCM] || "gray"} 
+                        fillColor={rcmColorMap[point.Best_RCM] || "gray"}
                         fillOpacity={1} stroke={false}>
                         <Tooltip>
                             Gridpoint: {point.Gridpoint}<br />
