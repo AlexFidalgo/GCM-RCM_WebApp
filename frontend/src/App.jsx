@@ -214,7 +214,7 @@ function App() {
 			    WebkitTextStroke: "0.5px orange",  // This gives the orange contour
 			    fontWeight: "bold"
 			}}>
-			    {label}
+			    {model}
 			</span>
 
                     </div>
@@ -235,7 +235,7 @@ function App() {
 			    WebkitTextStroke: "0.5px orange",  // This gives the orange contour
 			    fontWeight: "bold"
 			}}>
-			    {label}
+			    {model}
 			</span>
                     </div>
                     ))}
