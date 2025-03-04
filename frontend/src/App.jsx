@@ -190,7 +190,13 @@ function App() {
                         backgroundColor: color,
                         border: "1px solid #fff"
                         }} />
-                        <span style={{ color: "white" }}>{label}</span>
+			<span style={{
+			    color: "white",
+			    WebkitTextStroke: "0.5px orange",  // This gives the orange contour
+			    fontWeight: "bold"
+			}}>
+			    {label}
+			</span>
                     </div>
                     ))}
 
@@ -203,7 +209,14 @@ function App() {
                         backgroundColor: color,
                         border: "1px solid #fff"
                         }} />
-                        <span style={{ color: "white" }}>{model}</span>
+                        <span style={{
+			    color: "white",
+			    WebkitTextStroke: "0.5px orange",  // This gives the orange contour
+			    fontWeight: "bold"
+			}}>
+			    {label}
+			</span>
+
                     </div>
                     ))}
 
@@ -216,7 +229,14 @@ function App() {
                         backgroundColor: color,
                         border: "1px solid #fff"
                         }} />
-                        <span style={{ color: "white" }}>{model}</span>
+		                        
+			<span style={{
+			    color: "white",
+			    WebkitTextStroke: "0.5px orange",  // This gives the orange contour
+			    fontWeight: "bold"
+			}}>
+			    {label}
+			</span>
                     </div>
                     ))}
                 </div>
