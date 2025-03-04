@@ -1,9 +1,20 @@
 App.jsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import RegionSelector from "./components/RegionSelector";
 import axios from "axios";
 import { MapContainer, TileLayer, CircleMarker, Tooltip } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
+
+const regionBounds = {
+    BI: [[50, -10], [59, 2]],
+    IP: [[36, -10], [44, 3]],
+    FR: [[44, -5], [50, 5]],
+    ME: [[48, 2], [55, 16]],
+    SC: [[55, 5], [70, 30]],
+    AL: [[44, 5], [48, 15]],
+    MD: [[36, 3], [44, 25]],
+    EA: [[44, 16], [55, 30]] 
+};
 
 function App() {
     const API_URL = import.meta.env.VITE_API_URL;
@@ -45,6 +56,16 @@ function App() {
                 });
         }
     }, [selectedRegion, selectedVariable]);
+
+
+	const mapRef = useRef();
+
+	useEffect(() => {
+	    if (selectedRegion && regionBounds[selectedRegion] && mapRef.current) {
+	        const map = mapRef.current;
+	        map.fitBounds(regionBounds[selectedRegion]);
+	    }
+	}, [selectedRegion]);
 
     useEffect(() => {
         if (selectedRegion && selectedVariable && selectedMetric) {
@@ -137,7 +158,7 @@ function App() {
 
             {/* Right: Map View */}
             <div style={{ width: "80%", padding: "1px 1px 1px 1px" }}>
-            <MapContainer key={mapKey} center={[45, 5]} zoom={5} style={{ height: "85vh", width: "100%" }}>
+	    <MapContainer ref={mapRef} center={[45, 5]} zoom={5} style={{ height: "85vh", width: "100%" }}>
                 <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
 
                 {/* Interaction Effects */}
