@@ -25,7 +25,7 @@ const RegionSelector = ({ onRegionSelect }) => {
 
     return (
         <div>
-            <label htmlFor="region-select">Select a Region:</label>
+            <label htmlFor="region-select">Select a Region: </label>
             <select id="region-select" value={selectedRegion} onChange={handleChange}>
                 <option value="">-- Choose a Region --</option>
                 {regions.length > 0 ? (
