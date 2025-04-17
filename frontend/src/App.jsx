@@ -126,7 +126,7 @@ function App() {
                 {selectedRegion && (
                     <div>
                         <p>Selected Region: {selectedRegion}</p>
-                        <label htmlFor="variable-select">Select Physical Variable:</label>
+                        <label htmlFor="variable-select">Select Physical Variable: </label>
                         <select id="variable-select" value={selectedVariable} onChange={(e) => setSelectedVariable(e.target.value)}>
                             <option value="">-- Choose a Variable --</option>
                             <option value="ppt">Precipitation (ppt)</option>
@@ -136,13 +136,17 @@ function App() {
                         {selectedVariable && availableMetrics.length > 0 && (
                             <div>
                                 <p>Selected Variable: {selectedVariable}</p>
-                                <label htmlFor="metric-select">Select Error Metric:</label>
-                                <select id="metric-select" value={selectedMetric} onChange={(e) => {
-                                    const metric = decodeURIComponent(e.target.value);
-                                    setSelectedMetric(metric);
-                                    setMapKey(prev => prev + 1); // Force map re-render
-                                    }
-                                }>
+                                <label htmlFor="metric-select">Select Error Metric: </label>
+
+                                <select
+                                    id="metric-select"
+                                    value={encodeURIComponent(selectedMetric)}
+                                    onChange={(e) => {
+                                        const metric = decodeURIComponent(e.target.value);
+                                        setSelectedMetric(metric);
+                                        setMapKey((prev) => prev + 1);
+                                    }}
+                                    >
                                     <option value="">-- Choose a Metric --</option>
                                     {availableMetrics.map(metric => (
                                         <option key={metric} value={encodeURIComponent(metric)}>{metric}</option>
@@ -152,7 +156,7 @@ function App() {
                                 {selectedMetric && (
                                     <div>
                                         <p>Selected Metric: {selectedMetric}</p>
-                                        <label htmlFor="visualization-mode">Select Visualization:</label>
+                                        <label htmlFor="visualization-mode">Select Visualization: </label>
                                         <select id="visualization-mode" value={visualizationMode} onChange={(e) => setVisualizationMode(e.target.value)}>
                                             <option value="interaction">Interaction Effects</option>
                                             <option value="best_gcm">Best GCM</option>
