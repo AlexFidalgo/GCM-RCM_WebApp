@@ -74,10 +74,14 @@ function App() {
 
     useEffect(() => {
         if (selectedRegion && selectedVariable && selectedMetric) {
+
+            setFileData(null);
+            setBestModelsData(null);
             const encodedMetric = encodeURIComponent(selectedMetric);
 
             axios.get(`${API_URL}/load_csv?region=${selectedRegion}&physical_variable=${selectedVariable}&metric=${encodedMetric}`)
                 .then(response => {
+                    console.log("New fileData", response.data);
                     setFileData(response.data);
                     setMapKey(prevKey => prevKey + 1);
                 })
@@ -139,21 +143,21 @@ function App() {
                             <div>
                                 <p>Selected Variable: {selectedVariable}</p>
                                 <label htmlFor="metric-select">Select Error Metric: </label>
-
                                 <select
                                     id="metric-select"
-                                    value={encodeURIComponent(selectedMetric)}
+                                    value={selectedMetric}
                                     onChange={(e) => {
-                                        const metric = decodeURIComponent(e.target.value);
+                                        const metric = e.target.value;
                                         setSelectedMetric(metric);
-                                        setMapKey((prev) => prev + 1);
+                                        setMapKey((prev) => prev + 1); // Force map refresh
                                     }}
-                                    >
+                                >
                                     <option value="">-- Choose a Metric --</option>
                                     {availableMetrics.map(metric => (
-                                        <option key={metric} value={encodeURIComponent(metric)}>{metric}</option>
+                                        <option key={metric} value={metric}>{metric}</option>
                                     ))}
                                 </select>
+
 
                                 {selectedMetric && (
                                     <div>
