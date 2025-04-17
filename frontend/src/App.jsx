@@ -39,6 +39,11 @@ function App() {
     ];
 
     useEffect(() => {
+        console.log("Selected metric changed:", selectedMetric);
+        console.log("Map key:", mapKey);
+    }, [selectedMetric, mapKey]);    
+
+    useEffect(() => {
         if (selectedRegion && selectedVariable) {
             axios.get(`${API_URL}/list_metrics?region=${selectedRegion}&physical_variable=${selectedVariable}`)
                 .then(response => {
@@ -132,7 +137,12 @@ function App() {
                             <div>
                                 <p>Selected Variable: {selectedVariable}</p>
                                 <label htmlFor="metric-select">Select Error Metric:</label>
-                                <select id="metric-select" value={selectedMetric} onChange={(e) => setSelectedMetric(decodeURIComponent(e.target.value))}>
+                                <select id="metric-select" value={selectedMetric} onChange={(e) => {
+                                    const metric = decodeURIComponent(e.target.value);
+                                    setSelectedMetric(metric);
+                                    setMapKey(prev => prev + 1); // Force map re-render
+                                    }
+                                }>
                                     <option value="">-- Choose a Metric --</option>
                                     {availableMetrics.map(metric => (
                                         <option key={metric} value={encodeURIComponent(metric)}>{metric}</option>
