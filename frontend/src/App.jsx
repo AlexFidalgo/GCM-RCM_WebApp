@@ -120,12 +120,13 @@ function App() {
     return (
         <div style={{ display: "flex", height: "90vh", width: "100vw" }}>
             {/* Left Panel */}
-            <div style={{ width: "20%", padding: "5px", backgroundColor: "#222", color: "white" }}>
+            <div style={{ width: "20%", padding: "5px", backgroundColor: "#222", color: "white", marginRight: "10px" }}>
                 <RegionSelector onRegionSelect={setSelectedRegion} />
 
                 {selectedRegion && (
                     <div>
                         <p>Selected Region: {selectedRegion}</p>
+                        
                         <label htmlFor="variable-select">Select Physical Variable: </label>
                         <select id="variable-select" value={selectedVariable} onChange={(e) => setSelectedVariable(e.target.value)}>
                             <option value="">-- Choose a Variable --</option>
