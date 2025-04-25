@@ -1,0 +1,8 @@
+- Start the Flask backend
+    python backend/app.py
+- Open a second terminal and navigate to your frontend folder:
+    (cd frontend && npm run dev)
+
+http://3.80.122.246:5173/
+
+ssh -i "flask-key.pem" ec2-user@ec2-3-80-122-246.compute-1.amazonaws.com

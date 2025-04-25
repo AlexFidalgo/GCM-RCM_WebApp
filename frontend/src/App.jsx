@@ -1,10 +1,24 @@
-import { useState, useEffect } from "react";
+App.jsx
+import { useState, useEffect, useRef } from "react";
 import RegionSelector from "./components/RegionSelector";
 import axios from "axios";
 import { MapContainer, TileLayer, CircleMarker, Tooltip } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 
+const regionBounds = {
+    BI: [[50, -10], [59, 2]],
+    IP: [[36, -10], [44, 3]],
+    FR: [[44, -5], [50, 5]],
+    ME: [[48, 2], [55, 16]],
+    SC: [[55, 5], [70, 30]],
+    AL: [[44, 5], [48, 15]],
+    MD: [[36, 3], [44, 25]],
+    EA: [[44, 16], [55, 30]] 
+};
+
 function App() {
+    const API_URL = import.meta.env.VITE_API_URL;
+
     const [selectedRegion, setSelectedRegion] = useState("");
     const [selectedVariable, setSelectedVariable] = useState("");
     const [availableMetrics, setAvailableMetrics] = useState([]);
@@ -25,8 +39,13 @@ function App() {
     ];
 
     useEffect(() => {
+        console.log("Selected metric changed:", selectedMetric);
+        console.log("Map key:", mapKey);
+    }, [selectedMetric, mapKey]);    
+
+    useEffect(() => {
         if (selectedRegion && selectedVariable) {
-            axios.get(`http://127.0.0.1:5000/list_metrics?region=${selectedRegion}&physical_variable=${selectedVariable}`)
+            axios.get(`${API_URL}/list_metrics?region=${selectedRegion}&physical_variable=${selectedVariable}`)
                 .then(response => {
                     setAvailableMetrics(response.data.metrics);
                     setSelectedMetric("");
@@ -43,12 +62,26 @@ function App() {
         }
     }, [selectedRegion, selectedVariable]);
 
+
+	const mapRef = useRef();
+
+	useEffect(() => {
+	    if (selectedRegion && regionBounds[selectedRegion] && mapRef.current) {
+	        const map = mapRef.current;
+	        map.fitBounds(regionBounds[selectedRegion]);
+	    }
+	}, [selectedRegion]);
+
     useEffect(() => {
         if (selectedRegion && selectedVariable && selectedMetric) {
+
+            setFileData(null);
+            setBestModelsData(null);
             const encodedMetric = encodeURIComponent(selectedMetric);
 
-            axios.get(`http://127.0.0.1:5000/load_csv?region=${selectedRegion}&physical_variable=${selectedVariable}&metric=${encodedMetric}`)
+            axios.get(`${API_URL}/load_csv?region=${selectedRegion}&physical_variable=${selectedVariable}&metric=${encodedMetric}`)
                 .then(response => {
+                    console.log("New fileData", response.data);
                     setFileData(response.data);
                     setMapKey(prevKey => prevKey + 1);
                 })
@@ -57,7 +90,7 @@ function App() {
                     setFileData(null);
                 });
 
-            axios.get(`http://127.0.0.1:5000/best_models?region=${selectedRegion}&physical_variable=${selectedVariable}&metric=${encodedMetric}`)
+            axios.get(`${API_URL}/best_models?region=${selectedRegion}&physical_variable=${selectedVariable}&metric=${encodedMetric}`)
                 .then(response => {
                     setBestModelsData(response.data);
 
@@ -91,34 +124,45 @@ function App() {
     return (
         <div style={{ display: "flex", height: "90vh", width: "100vw" }}>
             {/* Left Panel */}
-            <div style={{ width: "20%", padding: "5px", backgroundColor: "#222", color: "white" }}>
+            <div style={{ width: "20%", padding: "5px", backgroundColor: "#222", color: "white"}}>
                 <RegionSelector onRegionSelect={setSelectedRegion} />
 
                 {selectedRegion && (
                     <div>
                         <p>Selected Region: {selectedRegion}</p>
-                        <label htmlFor="variable-select">Select Physical Variable:</label>
-                        <select id="variable-select" value={selectedVariable} onChange={(e) => setSelectedVariable(e.target.value)}>
-                            <option value="">-- Choose a Variable --</option>
-                            <option value="ppt">Precipitation (ppt)</option>
-                            <option value="tas">Temperature (tas)</option>
-                        </select>
-
+                        
+                        <div style={{ marginBottom: "10px" }}>
+                            <label htmlFor="variable-select">Select Physical Variable: </label>
+                            <select id="variable-select" value={selectedVariable} onChange={(e) => setSelectedVariable(e.target.value)}>
+                                <option value="">-- Choose a Variable --</option>
+                                <option value="ppt">Precipitation (ppt)</option>
+                                <option value="tas">Temperature (tas)</option>
+                            </select>
+                        </div>
                         {selectedVariable && availableMetrics.length > 0 && (
                             <div>
                                 <p>Selected Variable: {selectedVariable}</p>
-                                <label htmlFor="metric-select">Select Error Metric:</label>
-                                <select id="metric-select" value={selectedMetric} onChange={(e) => setSelectedMetric(decodeURIComponent(e.target.value))}>
+                                <label htmlFor="metric-select">Select Error Metric: </label>
+                                <select
+                                    id="metric-select"
+                                    value={selectedMetric}
+                                    onChange={(e) => {
+                                        const metric = e.target.value;
+                                        setSelectedMetric(metric);
+                                        setMapKey((prev) => prev + 1); // Force map refresh
+                                    }}
+                                >
                                     <option value="">-- Choose a Metric --</option>
                                     {availableMetrics.map(metric => (
-                                        <option key={metric} value={encodeURIComponent(metric)}>{metric}</option>
+                                        <option key={metric} value={metric}>{metric}</option>
                                     ))}
                                 </select>
+
 
                                 {selectedMetric && (
                                     <div>
                                         <p>Selected Metric: {selectedMetric}</p>
-                                        <label htmlFor="visualization-mode">Select Visualization:</label>
+                                        <label htmlFor="visualization-mode">Select Visualization: </label>
                                         <select id="visualization-mode" value={visualizationMode} onChange={(e) => setVisualizationMode(e.target.value)}>
                                             <option value="interaction">Interaction Effects</option>
                                             <option value="best_gcm">Best GCM</option>
@@ -134,7 +178,7 @@ function App() {
 
             {/* Right: Map View */}
             <div style={{ width: "80%", padding: "1px 1px 1px 1px" }}>
-            <MapContainer key={mapKey} center={[45, 5]} zoom={5} style={{ height: "85vh", width: "100%" }}>
+	    <MapContainer ref={mapRef} center={[45, 5]} zoom={5} style={{ height: "85vh", width: "100%" }}>
                 <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
 
                 {/* Interaction Effects */}
@@ -154,7 +198,7 @@ function App() {
                 {/* Best GCM Models */}
                 {visualizationMode === "best_gcm" && bestModelsData && bestModelsData.map((point, index) => (
                     <CircleMarker key={index} center={[point.latitude, point.longitude]} radius={4}
-                        fillColor={gcmColorMap[point.Best_GCM] || "gray"} 
+                        fillColor={gcmColorMap[point.Best_GCM] || "gray"}
                         fillOpacity={1} stroke={false}>
                         <Tooltip>
                             Gridpoint: {point.Gridpoint}<br />
@@ -166,7 +210,7 @@ function App() {
                 {/* Best RCM Models */}
                 {visualizationMode === "best_rcm" && bestModelsData && bestModelsData.map((point, index) => (
                     <CircleMarker key={index} center={[point.latitude, point.longitude]} radius={4}
-                        fillColor={rcmColorMap[point.Best_RCM] || "gray"} 
+                        fillColor={rcmColorMap[point.Best_RCM] || "gray"}
                         fillOpacity={1} stroke={false}>
                         <Tooltip>
                             Gridpoint: {point.Gridpoint}<br />
@@ -187,7 +231,13 @@ function App() {
                         backgroundColor: color,
                         border: "1px solid #fff"
                         }} />
-                        <span style={{ color: "white" }}>{label}</span>
+			<span style={{
+			    color: "white",
+			    WebkitTextStroke: "0.5px orange",  // This gives the orange contour
+			    fontWeight: "bold"
+			}}>
+			    {label}
+			</span>
                     </div>
                     ))}
 
@@ -200,7 +250,14 @@ function App() {
                         backgroundColor: color,
                         border: "1px solid #fff"
                         }} />
-                        <span style={{ color: "white" }}>{model}</span>
+                        <span style={{
+			    color: "white",
+			    WebkitTextStroke: "0.5px orange",  // This gives the orange contour
+			    fontWeight: "bold"
+			}}>
+			    {model}
+			</span>
+
                     </div>
                     ))}
 
@@ -213,7 +270,14 @@ function App() {
                         backgroundColor: color,
                         border: "1px solid #fff"
                         }} />
-                        <span style={{ color: "white" }}>{model}</span>
+		                        
+			<span style={{
+			    color: "white",
+			    WebkitTextStroke: "0.5px orange",  // This gives the orange contour
+			    fontWeight: "bold"
+			}}>
+			    {model}
+			</span>
                     </div>
                     ))}
                 </div>
