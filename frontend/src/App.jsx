@@ -31,6 +31,9 @@ function App() {
     const [rcmColorMap, setRcmColorMap] = useState({});
     const [equivalentBestGCMs, setEquivalentBestGCMs] = useState({});
     const [equivalentBestRCMs, setEquivalentBestRCMs] = useState({});
+    const [selectedGCMFilter, setSelectedGCMFilter] = useState("");
+    const [selectedRCMFilter, setSelectedRCMFilter] = useState("");
+
 
 
     const interactionLegend = [
@@ -182,25 +185,45 @@ function App() {
                                             <option value="interaction">Interaction Effects</option>
                                             <option value="best_gcm">Best GCM</option>
                                             <option value="best_rcm">Best RCM</option>
+                                            <option value="gcm_filter">GCM Filter</option>
+                                            <option value="rcm_filter">RCM Filter</option>
                                         </select>
-                                    </div>
-                                )}
 
-                                {selectedMetric && (
-                                    <div style={{ marginTop: "10px" }}>
-                                        <p><strong>Equivalent Best GCMs (example):</strong></p>
-                                        <ul>
-                                            {(equivalentBestGCMs["1"] || []).map((model, idx) => (
-                                                <li key={idx}>{model}</li>
-                                            ))}
-                                        </ul>
+                                        {/* GCM Filter dropdown */}
+                                        {visualizationMode === "gcm_filter" && (
+                                            <div style={{ marginTop: "10px" }}>
+                                                <label htmlFor="gcm-filter-select">Select GCM Model: </label>
+                                                <select
+                                                    id="gcm-filter-select"
+                                                    value={selectedGCMFilter}
+                                                    onChange={(e) => setSelectedGCMFilter(e.target.value)}
+                                                >
+                                                    <option value="">-- Choose a GCM --</option>
+                                                    {Object.keys(gcmColorMap).map(gcm => (
+                                                        <option key={gcm} value={gcm}>{gcm}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        )}
 
-                                        <p><strong>Equivalent Best RCMs (example):</strong></p>
-                                        <ul>
-                                            {(equivalentBestRCMs["1"] || []).map((model, idx) => (
-                                                <li key={idx}>{model}</li>
-                                            ))}
-                                        </ul>
+                                        {/* RCM Filter dropdown */}
+                                        {visualizationMode === "rcm_filter" && (
+                                            <div style={{ marginTop: "10px" }}>
+                                                <label htmlFor="rcm-filter-select">Select RCM Model: </label>
+                                                <select
+                                                    id="rcm-filter-select"
+                                                    value={selectedRCMFilter}
+                                                    onChange={(e) => setSelectedRCMFilter(e.target.value)}
+                                                >
+                                                    <option value="">-- Choose a RCM --</option>
+                                                    {Object.keys(rcmColorMap).map(rcm => (
+                                                        <option key={rcm} value={rcm}>{rcm}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        )}
+
+
                                     </div>
                                 )}
 
@@ -231,28 +254,100 @@ function App() {
                 ))}
 
                 {/* Best GCM Models */}
-                {visualizationMode === "best_gcm" && bestModelsData && bestModelsData.map((point, index) => (
-                    <CircleMarker key={index} center={[point.latitude, point.longitude]} radius={4}
-                        fillColor={gcmColorMap[point.Best_GCM] || "gray"}
-                        fillOpacity={1} stroke={false}>
-                        <Tooltip>
-                            Gridpoint: {point.Gridpoint}<br />
-                            Best GCM: {point.Best_GCM}
-                        </Tooltip>
-                    </CircleMarker>
-                ))}
+                {visualizationMode === "best_gcm" && bestModelsData && bestModelsData.map((point, index) => {
+                    const equivalents = equivalentBestGCMs[point.Gridpoint?.toString()] || [];
+
+                    return (
+                        <CircleMarker key={index} center={[point.latitude, point.longitude]} radius={4}
+                            fillColor={gcmColorMap[point.Best_GCM] || "gray"}
+                            fillOpacity={1} stroke={false}>
+                            <Tooltip>
+                                <div>
+                                    <strong>Gridpoint:</strong> {point.Gridpoint}<br />
+                                    <strong>Best GCM:</strong> {point.Best_GCM}<br />
+                                    <strong>Equivalent Best GCMs:</strong>
+                                    <ul style={{ margin: 0, paddingLeft: "1em" }}>
+                                        {equivalents.map((gcm, i) => (
+                                            <li key={i}>{gcm}</li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            </Tooltip>
+                        </CircleMarker>
+                    );
+                })}
+
 
                 {/* Best RCM Models */}
-                {visualizationMode === "best_rcm" && bestModelsData && bestModelsData.map((point, index) => (
-                    <CircleMarker key={index} center={[point.latitude, point.longitude]} radius={4}
-                        fillColor={rcmColorMap[point.Best_RCM] || "gray"}
-                        fillOpacity={1} stroke={false}>
+                {visualizationMode === "best_rcm" && bestModelsData && bestModelsData.map((point, index) => {
+                    const equivalents = equivalentBestRCMs[point.Gridpoint?.toString()] || [];
+
+                    return (
+                        <CircleMarker key={index} center={[point.latitude, point.longitude]} radius={4}
+                            fillColor={rcmColorMap[point.Best_RCM] || "gray"}
+                            fillOpacity={1} stroke={false}>
+                            <Tooltip>
+                                <div>
+                                    <strong>Gridpoint:</strong> {point.Gridpoint}<br />
+                                    <strong>Best RCM:</strong> {point.Best_RCM}<br />
+                                    <strong>Equivalent Best RCMs:</strong>
+                                    <ul style={{ margin: 0, paddingLeft: "1em" }}>
+                                        {equivalents.map((rcm, i) => (
+                                            <li key={i}>{rcm}</li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            </Tooltip>
+                        </CircleMarker>
+                    );
+                })}
+
+
+                {/* GCM Filter */}
+                {visualizationMode === "gcm_filter" && selectedGCMFilter && bestModelsData && bestModelsData.map((point, index) => {
+                    const equivalents = equivalentBestGCMs[point.Gridpoint?.toString()] || [];
+                    const isMatch = equivalents.includes(selectedGCMFilter);
+
+                    return isMatch ? (
+                        <CircleMarker
+                            key={index}
+                            center={[point.latitude, point.longitude]}
+                            radius={5}
+                            fillColor={"orange"}
+                            fillOpacity={1}
+                            stroke={false}
+                        >
+                            <Tooltip>
+                                Gridpoint: {point.Gridpoint}<br />
+                                This GCM is among the statistically best.
+                            </Tooltip>
+                        </CircleMarker>
+                    ) : null;
+                })}
+
+            {/* RCM Filter */}
+            {visualizationMode === "rcm_filter" && selectedRCMFilter && bestModelsData && bestModelsData.map((point, index) => {
+                const equivalents = equivalentBestRCMs[point.Gridpoint?.toString()] || [];
+                const isMatch = equivalents.includes(selectedRCMFilter);
+
+                return isMatch ? (
+                    <CircleMarker
+                        key={index}
+                        center={[point.latitude, point.longitude]}
+                        radius={5}
+                        fillColor={"orange"}
+                        fillOpacity={1}
+                        stroke={false}
+                    >
                         <Tooltip>
                             Gridpoint: {point.Gridpoint}<br />
-                            Best RCM: {point.Best_RCM}
+                            This RCM is among the statistically best.
                         </Tooltip>
                     </CircleMarker>
-                ))}
+                ) : null;
+            })}
+
+
             </MapContainer>
 
                 {/* Legends */}
