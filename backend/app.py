@@ -134,6 +134,44 @@ def best_models():
 def home():
     return jsonify({"message": "Flask API is running successfully!"})
 
+@app.route("/equivalent_best_models", methods=["GET"])
+def get_equivalent_best_models():
+    region = request.args.get("region")
+    variable = request.args.get("physical_variable")
+    metric = request.args.get("metric")
+
+    if not region or not variable or not metric:
+        return jsonify({"error": "Missing required parameters"}), 400
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        query = read_sql_query("get_equivalent_best_models.sql")
+
+        cursor.execute(query, (region, variable, metric, region, variable, metric)) # Parameters must be passed twice: once for GCM query, once for RCM
+        rows = cursor.fetchall()
+        conn.close()
+
+        from collections import defaultdict
+        gcm_dict = defaultdict(list)
+        rcm_dict = defaultdict(list)
+
+        for model_type, gridpoint, model_name in rows:
+            if model_type == "gcm":
+                gcm_dict[gridpoint].append(model_name)
+            else:
+                rcm_dict[gridpoint].append(model_name)
+
+        return jsonify({
+            "equivalent_best_gcms": gcm_dict,
+            "equivalent_best_rcms": rcm_dict
+        })
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+
 # Run Flask app
 if __name__ == "__main__":
     app.run(debug=True)

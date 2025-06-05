@@ -29,6 +29,9 @@ function App() {
     const [visualizationMode, setVisualizationMode] = useState("interaction");
     const [gcmColorMap, setGcmColorMap] = useState({});
     const [rcmColorMap, setRcmColorMap] = useState({});
+    const [equivalentBestGCMs, setEquivalentBestGCMs] = useState({});
+    const [equivalentBestRCMs, setEquivalentBestRCMs] = useState({});
+
 
     const interactionLegend = [
         { label: "Interaction", color: "yellow" },
@@ -115,6 +118,18 @@ function App() {
                     console.error("Error fetching best models:", error);
                     setBestModelsData(null);
                 });
+
+            axios.get(`${API_URL}/equivalent_best_models?region=${selectedRegion}&physical_variable=${selectedVariable}&metric=${encodedMetric}`)
+                .then(response => {
+                    setEquivalentBestGCMs(response.data.equivalent_best_gcms);
+                    setEquivalentBestRCMs(response.data.equivalent_best_rcms);
+                })
+                .catch(error => {
+                    console.error("Error fetching equivalent best models:", error);
+                    setEquivalentBestGCMs({});
+                    setEquivalentBestRCMs({});
+                });
+
         } else {
             setFileData(null);
             setBestModelsData(null);
@@ -170,6 +185,26 @@ function App() {
                                         </select>
                                     </div>
                                 )}
+
+                                {selectedMetric && (
+                                    <div style={{ marginTop: "10px" }}>
+                                        <p><strong>Equivalent Best GCMs (example):</strong></p>
+                                        <ul>
+                                            {(equivalentBestGCMs["1"] || []).map((model, idx) => (
+                                                <li key={idx}>{model}</li>
+                                            ))}
+                                        </ul>
+
+                                        <p><strong>Equivalent Best RCMs (example):</strong></p>
+                                        <ul>
+                                            {(equivalentBestRCMs["1"] || []).map((model, idx) => (
+                                                <li key={idx}>{model}</li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
+
+
                             </div>
                         )}
                     </div>
