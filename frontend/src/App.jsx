@@ -199,7 +199,7 @@ function App() {
                                                     onChange={(e) => setSelectedGCMFilter(e.target.value)}
                                                 >
                                                     <option value="">-- Choose a GCM --</option>
-                                                    {Object.keys(gcmColorMap).map(gcm => (
+                                                    {[...new Set(Object.values(equivalentBestGCMs).flat())].map(gcm => (
                                                         <option key={gcm} value={gcm}>{gcm}</option>
                                                     ))}
                                                 </select>
@@ -216,7 +216,7 @@ function App() {
                                                     onChange={(e) => setSelectedRCMFilter(e.target.value)}
                                                 >
                                                     <option value="">-- Choose a RCM --</option>
-                                                    {Object.keys(rcmColorMap).map(rcm => (
+                                                    {[...new Set(Object.values(equivalentBestRCMs).flat())].map(rcm => (
                                                         <option key={rcm} value={rcm}>{rcm}</option>
                                                     ))}
                                                 </select>
