@@ -2,7 +2,7 @@ App.jsx
 import { useState, useEffect, useRef } from "react";
 import RegionSelector from "./components/RegionSelector";
 import axios from "axios";
-import { MapContainer, TileLayer, CircleMarker, Tooltip } from "react-leaflet";
+import { MapContainer, TileLayer, CircleMarker, Tooltip, Rectangle } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 
 const regionBounds = {
@@ -238,6 +238,17 @@ function App() {
             <div style={{ width: "80%", padding: "1px 1px 1px 1px" }}>
 	    <MapContainer ref={mapRef} center={[45, 5]} zoom={5} style={{ height: "85vh", width: "100%" }}>
                 <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                    {Object.entries(regionBounds).map(([regionKey, bounds], index) => (
+                        <Rectangle
+                            key={index}
+                            bounds={bounds}
+                            pathOptions={{
+                                color: "gray",
+                                weight: 2,
+                                fill: false 
+                            }}
+                        />
+                    ))}
 
                 {/* Interaction Effects */}
                 {visualizationMode === "interaction" && fileData && fileData.map((point, index) => (
