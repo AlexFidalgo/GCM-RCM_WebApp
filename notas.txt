@@ -8,6 +8,10 @@ Running on EC2
 
     ssh -i "flask-key.pem" ec2-user@ec2-3-80-122-246.compute-1.amazonaws.com
 
+    docker-compose up --build
+    docker-compose up -d --build
+
+
 Running locally
 
     Adapt backend/.env and frontend/.env files accordingly
