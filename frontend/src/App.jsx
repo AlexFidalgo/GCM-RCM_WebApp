@@ -33,6 +33,7 @@ function App() {
     const [equivalentBestRCMs, setEquivalentBestRCMs] = useState({});
     const [selectedGCMFilter, setSelectedGCMFilter] = useState("");
     const [selectedRCMFilter, setSelectedRCMFilter] = useState("");
+    const [showRegionBoundaries, setShowRegionBoundaries] = useState(true);
 
 
 
@@ -143,6 +144,27 @@ function App() {
         <div style={{ display: "flex", height: "90vh", width: "100vw" }}>
             {/* Left Panel */}
             <div style={{ width: "20%", padding: "5px", backgroundColor: "#222", color: "white"}}>
+                {/* Toggle Region Boundaries Button */}
+                <div style={{ marginBottom: "15px" }}>
+                    <button
+                        onClick={() => setShowRegionBoundaries(!showRegionBoundaries)}
+                        style={{
+                            padding: "8px 16px",
+                            backgroundColor: showRegionBoundaries ? "#4CAF50" : "#666",
+                            color: "white",
+                            border: "none",
+                            borderRadius: "4px",
+                            cursor: "pointer",
+                            fontSize: "14px",
+                            fontWeight: "bold",
+                            width: "100%"
+                        }}
+                        onMouseOver={(e) => e.target.style.opacity = "0.8"}
+                        onMouseOut={(e) => e.target.style.opacity = "1"}
+                    >
+                        {showRegionBoundaries ? "✓ Hide Boundaries" : "Show Boundaries"}
+                    </button>
+                </div>
                 <RegionSelector onRegionSelect={setSelectedRegion} />
 
                 {selectedRegion && (
@@ -238,7 +260,7 @@ function App() {
             <div style={{ width: "80%", padding: "1px 1px 1px 1px" }}>
 	    <MapContainer ref={mapRef} center={[45, 5]} zoom={5} style={{ height: "85vh", width: "100%" }}>
                 <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                    {Object.entries(regionBounds).map(([regionKey, bounds], index) => (
+                    {showRegionBoundaries && Object.entries(regionBounds).map(([regionKey, bounds], index) => (
                         <Rectangle
                             key={index}
                             bounds={bounds}
