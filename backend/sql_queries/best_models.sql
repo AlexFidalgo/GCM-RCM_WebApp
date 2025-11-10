@@ -3,7 +3,8 @@ SELECT
     min_gcm, 
     min_rcm, 
     latitude, 
-    longitude
+    longitude,
+    region
 FROM 
     climate_metrics
 WHERE 

@@ -44,41 +44,56 @@ def list_regions():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# 📌 **List Available Metrics for a Region & Variable**
+# 📌 **List Available Metrics for a Variable (optionally filtered by Region)**
 @app.route("/list_metrics", methods=["GET"])
 def list_metrics():
     region = request.args.get("region")
     physical_variable = request.args.get("physical_variable")
 
-    if not region or not physical_variable:
-        return jsonify({"error": "Region and physical_variable parameters are required"}), 400
+    if not physical_variable:
+        return jsonify({"error": "physical_variable parameter is required"}), 400
 
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        query = read_sql_query("list_metrics.sql")
-        cursor.execute(query, (region, physical_variable))
+        
+        if region:
+            # Use region-specific query
+            query = read_sql_query("list_metrics.sql")
+            cursor.execute(query, (region, physical_variable))
+        else:
+            # Use all-regions query
+            query = read_sql_query("list_metrics_all_regions.sql")
+            cursor.execute(query, (physical_variable,))
+        
         metrics = [row[0] for row in cursor.fetchall()]
         conn.close()
         return jsonify({"metrics": sorted(metrics)})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# 📌 **Load Data for a Specific Region, Variable & Metric**
+# 📌 **Load Data for Variable & Metric (optionally filtered by Region)**
 @app.route("/load_csv", methods=["GET"])
 def load_csv():
     region = request.args.get("region")
     physical_variable = request.args.get("physical_variable")
     metric_abbreviation = request.args.get("metric")
 
-    if not region or not physical_variable or not metric_abbreviation:
-        return jsonify({"error": "Region, physical_variable, and metric parameters are required"}), 400
+    if not physical_variable or not metric_abbreviation:
+        return jsonify({"error": "physical_variable and metric parameters are required"}), 400
 
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        query = read_sql_query("load_csv.sql")
-        cursor.execute(query, (region, physical_variable, metric_abbreviation))
+        
+        if region:
+            # Use region-specific query
+            query = read_sql_query("load_csv.sql")
+            cursor.execute(query, (region, physical_variable, metric_abbreviation))
+        else:
+            # Use all-regions query
+            query = read_sql_query("load_csv_all_regions.sql")
+            cursor.execute(query, (physical_variable, metric_abbreviation))
 
         records = [
             {
@@ -89,7 +104,8 @@ def load_csv():
                 "min_gcm": row[4],
                 "min_rcm": row[5],
                 "latitude": row[6],
-                "longitude": row[7]
+                "longitude": row[7],
+                "region": row[8]
             }
             for row in cursor.fetchall()
         ]
@@ -105,14 +121,21 @@ def best_models():
     physical_variable = request.args.get("physical_variable")
     metric_abbreviation = request.args.get("metric")
 
-    if not region or not physical_variable or not metric_abbreviation:
-        return jsonify({"error": "Region, physical_variable, and metric parameters are required"}), 400
+    if not physical_variable or not metric_abbreviation:
+        return jsonify({"error": "physical_variable and metric parameters are required"}), 400
 
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        query = read_sql_query("best_models.sql")
-        cursor.execute(query, (region, physical_variable, metric_abbreviation))
+        
+        if region:
+            # Use region-specific query
+            query = read_sql_query("best_models.sql")
+            cursor.execute(query, (region, physical_variable, metric_abbreviation))
+        else:
+            # Use all-regions query
+            query = read_sql_query("best_models_all_regions.sql")
+            cursor.execute(query, (physical_variable, metric_abbreviation))
 
         records = [
             {
@@ -120,13 +143,34 @@ def best_models():
                 "Best_GCM": row[1],
                 "Best_RCM": row[2],
                 "latitude": row[3],
-                "longitude": row[4]
+                "longitude": row[4],
+                "region": row[5]
             }
             for row in cursor.fetchall()
         ]
 
         conn.close()
         return jsonify(records)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# 📌 **List Regions Available for a Metric & Variable**
+@app.route("/list_regions_for_metric", methods=["GET"])
+def list_regions_for_metric():
+    physical_variable = request.args.get("physical_variable")
+    metric_abbreviation = request.args.get("metric")
+
+    if not physical_variable or not metric_abbreviation:
+        return jsonify({"error": "physical_variable and metric parameters are required"}), 400
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        query = read_sql_query("list_regions_for_metric.sql")
+        cursor.execute(query, (physical_variable, metric_abbreviation))
+        regions = [row[0] for row in cursor.fetchall()]
+        conn.close()
+        return jsonify({"regions": regions})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -140,27 +184,37 @@ def get_equivalent_best_models():
     variable = request.args.get("physical_variable")
     metric = request.args.get("metric")
 
-    if not region or not variable or not metric:
-        return jsonify({"error": "Missing required parameters"}), 400
+    if not variable or not metric:
+        return jsonify({"error": "physical_variable and metric parameters are required"}), 400
 
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        query = read_sql_query("get_equivalent_best_models.sql")
-
-        cursor.execute(query, (region, variable, metric, region, variable, metric)) # Parameters must be passed twice: once for GCM query, once for RCM
+        
+        if region:
+            # Use region-specific query
+            query = read_sql_query("get_equivalent_best_models.sql")
+            cursor.execute(query, (region, variable, metric, region, variable, metric)) # Parameters must be passed twice: once for GCM query, once for RCM
+        else:
+            # Use all-regions query
+            query = read_sql_query("get_equivalent_best_models_all_regions.sql")
+            cursor.execute(query, (variable, metric, variable, metric)) # Parameters must be passed twice: once for GCM query, once for RCM
+        
         rows = cursor.fetchall()
         conn.close()
 
         from collections import defaultdict
+        # Use composite key: "region-gridpoint" to handle overlapping gridpoint IDs across regions
         gcm_dict = defaultdict(list)
         rcm_dict = defaultdict(list)
 
-        for model_type, gridpoint, model_name in rows:
+        for model_type, gridpoint, model_name, region_val in rows:
+            # Create unique key combining region and gridpoint
+            key = f"{region_val}-{gridpoint}"
             if model_type == "gcm":
-                gcm_dict[gridpoint].append(model_name)
+                gcm_dict[key].append(model_name)
             else:
-                rcm_dict[gridpoint].append(model_name)
+                rcm_dict[key].append(model_name)
 
         return jsonify({
             "equivalent_best_gcms": gcm_dict,

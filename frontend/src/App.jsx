@@ -1,6 +1,5 @@
 App.jsx
 import { useState, useEffect, useRef } from "react";
-import RegionSelector from "./components/RegionSelector";
 import axios from "axios";
 import { MapContainer, TileLayer, CircleMarker, Tooltip, Rectangle } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
@@ -19,10 +18,11 @@ const regionBounds = {
 function App() {
     const API_URL = import.meta.env.VITE_API_URL;
 
-    const [selectedRegion, setSelectedRegion] = useState("");
+    const [selectedRegion, setSelectedRegion] = useState(""); // Optional filter - empty means all regions
     const [selectedVariable, setSelectedVariable] = useState("");
     const [availableMetrics, setAvailableMetrics] = useState([]);
     const [selectedMetric, setSelectedMetric] = useState("");
+    const [availableRegions, setAvailableRegions] = useState([]); // Regions available for selected metric
     const [fileData, setFileData] = useState(null);
     const [bestModelsData, setBestModelsData] = useState(null);
     const [mapKey, setMapKey] = useState(0);
@@ -50,14 +50,17 @@ function App() {
         console.log("Map key:", mapKey);
     }, [selectedMetric, mapKey]);    
 
+    // Fetch metrics when variable is selected (always show metrics across all regions)
     useEffect(() => {
-        if (selectedRegion && selectedVariable) {
-            axios.get(`${API_URL}/list_metrics?region=${selectedRegion}&physical_variable=${selectedVariable}`)
+        if (selectedVariable) {
+            // Always fetch metrics across all regions for this variable (region filter doesn't affect available metrics)
+            axios.get(`${API_URL}/list_metrics?physical_variable=${selectedVariable}`)
                 .then(response => {
                     setAvailableMetrics(response.data.metrics);
                     setSelectedMetric("");
                     setFileData(null);
                     setBestModelsData(null);
+                    setAvailableRegions([]);
                     setMapKey(prevKey => prevKey + 1);
                 })
                 .catch(error => {
@@ -65,28 +68,77 @@ function App() {
                     setAvailableMetrics([]);
                     setFileData(null);
                     setBestModelsData(null);
+                    setAvailableRegions([]);
                 });
+        } else {
+            setAvailableMetrics([]);
+            setSelectedMetric("");
+            setFileData(null);
+            setBestModelsData(null);
+            setAvailableRegions([]);
         }
-    }, [selectedRegion, selectedVariable]);
+    }, [selectedVariable]);
 
 
 	const mapRef = useRef();
 
+	// Update map bounds based on selected region or show all regions
 	useEffect(() => {
-	    if (selectedRegion && regionBounds[selectedRegion] && mapRef.current) {
+	    if (mapRef.current && fileData && fileData.length > 0) {
 	        const map = mapRef.current;
-	        map.fitBounds(regionBounds[selectedRegion]);
+	        if (selectedRegion && regionBounds[selectedRegion]) {
+	            // Fit to selected region
+	            map.fitBounds(regionBounds[selectedRegion]);
+	        } else {
+	            // Fit to all data points (all regions)
+	            let minLat = 90, maxLat = -90, minLon = 180, maxLon = -180;
+	            
+	            fileData.forEach(point => {
+	                if (point.latitude && point.longitude) {
+	                    minLat = Math.min(minLat, point.latitude);
+	                    maxLat = Math.max(maxLat, point.latitude);
+	                    minLon = Math.min(minLon, point.longitude);
+	                    maxLon = Math.max(maxLon, point.longitude);
+	                }
+	            });
+	            
+	            if (minLat !== 90 && maxLat !== -90) { // Only if we have valid bounds
+	                map.fitBounds([[minLat, minLon], [maxLat, maxLon]]);
+	            }
+	        }
 	    }
-	}, [selectedRegion]);
+	}, [selectedRegion, fileData]);
 
+    // Fetch regions available for the selected metric
     useEffect(() => {
-        if (selectedRegion && selectedVariable && selectedMetric) {
+        if (selectedVariable && selectedMetric) {
+            const encodedMetric = encodeURIComponent(selectedMetric);
+            axios.get(`${API_URL}/list_regions_for_metric?physical_variable=${selectedVariable}&metric=${encodedMetric}`)
+                .then(response => {
+                    setAvailableRegions(response.data.regions);
+                })
+                .catch(error => {
+                    console.error("Error fetching regions for metric:", error);
+                    setAvailableRegions([]);
+                });
+        } else {
+            setAvailableRegions([]);
+        }
+    }, [selectedVariable, selectedMetric]);
 
+    // Fetch data when metric is selected (region is optional filter)
+    useEffect(() => {
+        if (selectedVariable && selectedMetric) {
             setFileData(null);
             setBestModelsData(null);
             const encodedMetric = encodeURIComponent(selectedMetric);
 
-            axios.get(`${API_URL}/load_csv?region=${selectedRegion}&physical_variable=${selectedVariable}&metric=${encodedMetric}`)
+            // Build URL with optional region parameter
+            const loadCsvUrl = selectedRegion
+                ? `${API_URL}/load_csv?region=${selectedRegion}&physical_variable=${selectedVariable}&metric=${encodedMetric}`
+                : `${API_URL}/load_csv?physical_variable=${selectedVariable}&metric=${encodedMetric}`;
+
+            axios.get(loadCsvUrl)
                 .then(response => {
                     console.log("New fileData", response.data);
                     setFileData(response.data);
@@ -97,7 +149,11 @@ function App() {
                     setFileData(null);
                 });
 
-            axios.get(`${API_URL}/best_models?region=${selectedRegion}&physical_variable=${selectedVariable}&metric=${encodedMetric}`)
+            const bestModelsUrl = selectedRegion
+                ? `${API_URL}/best_models?region=${selectedRegion}&physical_variable=${selectedVariable}&metric=${encodedMetric}`
+                : `${API_URL}/best_models?physical_variable=${selectedVariable}&metric=${encodedMetric}`;
+
+            axios.get(bestModelsUrl)
                 .then(response => {
                     setBestModelsData(response.data);
 
@@ -123,7 +179,11 @@ function App() {
                     setBestModelsData(null);
                 });
 
-            axios.get(`${API_URL}/equivalent_best_models?region=${selectedRegion}&physical_variable=${selectedVariable}&metric=${encodedMetric}`)
+            const equivalentModelsUrl = selectedRegion
+                ? `${API_URL}/equivalent_best_models?region=${selectedRegion}&physical_variable=${selectedVariable}&metric=${encodedMetric}`
+                : `${API_URL}/equivalent_best_models?physical_variable=${selectedVariable}&metric=${encodedMetric}`;
+
+            axios.get(equivalentModelsUrl)
                 .then(response => {
                     setEquivalentBestGCMs(response.data.equivalent_best_gcms);
                     setEquivalentBestRCMs(response.data.equivalent_best_rcms);
@@ -138,7 +198,7 @@ function App() {
             setFileData(null);
             setBestModelsData(null);
         }
-    }, [selectedMetric]);
+    }, [selectedVariable, selectedMetric, selectedRegion]);
 
     return (
         <div style={{ display: "flex", height: "90vh", width: "100vw" }}>
@@ -165,91 +225,102 @@ function App() {
                         {showRegionBoundaries ? "✓ Hide Boundaries" : "Show Boundaries"}
                     </button>
                 </div>
-                <RegionSelector onRegionSelect={setSelectedRegion} />
+                
+                {/* Physical Variable Selector - First Step */}
+                <div style={{ marginBottom: "15px" }}>
+                    <label htmlFor="variable-select">Select Physical Variable: </label>
+                    <select id="variable-select" value={selectedVariable} onChange={(e) => setSelectedVariable(e.target.value)}>
+                        <option value="">-- Choose a Variable --</option>
+                        <option value="ppt">Precipitation (ppt)</option>
+                        <option value="tas">Temperature (tas)</option>
+                    </select>
+                </div>
 
-                {selectedRegion && (
-                    <div>
-                        <p>Selected Region: {selectedRegion}</p>
-                        
-                        <div style={{ marginBottom: "10px" }}>
-                            <label htmlFor="variable-select">Select Physical Variable: </label>
-                            <select id="variable-select" value={selectedVariable} onChange={(e) => setSelectedVariable(e.target.value)}>
-                                <option value="">-- Choose a Variable --</option>
-                                <option value="ppt">Precipitation (ppt)</option>
-                                <option value="tas">Temperature (tas)</option>
-                            </select>
-                        </div>
-                        {selectedVariable && availableMetrics.length > 0 && (
-                            <div>
-                                <p>Selected Variable: {selectedVariable}</p>
-                                <label htmlFor="metric-select">Select Error Metric: </label>
+                {/* Metric Selector - Second Step */}
+                {selectedVariable && availableMetrics.length > 0 && (
+                    <div style={{ marginBottom: "15px" }}>
+                        <p>Selected Variable: {selectedVariable}</p>
+                        <label htmlFor="metric-select">Select Error Metric: </label>
+                        <select
+                            id="metric-select"
+                            value={selectedMetric}
+                            onChange={(e) => {
+                                const metric = e.target.value;
+                                setSelectedMetric(metric);
+                                setMapKey((prev) => prev + 1); // Force map refresh
+                            }}
+                        >
+                            <option value="">-- Choose a Metric --</option>
+                            {availableMetrics.map(metric => (
+                                <option key={metric} value={metric}>{metric}</option>
+                            ))}
+                        </select>
+                    </div>
+                )}
+
+                {/* Region Selector - Optional Filter (shown after metric is selected) */}
+                {selectedMetric && availableRegions.length > 0 && (
+                    <div style={{ marginBottom: "15px" }}>
+                        <p>Selected Metric: {selectedMetric}</p>
+                        <label htmlFor="region-select">Filter by Region (optional): </label>
+                        <select 
+                            id="region-select" 
+                            value={selectedRegion} 
+                            onChange={(e) => setSelectedRegion(e.target.value)}
+                        >
+                            <option value="">-- All Regions --</option>
+                            {availableRegions.map(region => (
+                                <option key={region} value={region}>{region}</option>
+                            ))}
+                        </select>
+                        {selectedRegion && <p style={{ marginTop: "5px", fontSize: "12px" }}>Filtering: {selectedRegion}</p>}
+                        {!selectedRegion && <p style={{ marginTop: "5px", fontSize: "12px", color: "#aaa" }}>Showing all {availableRegions.length} regions</p>}
+                    </div>
+                )}
+
+                {/* Visualization Options - Shown after metric is selected */}
+                {selectedMetric && (
+                    <div style={{ marginBottom: "15px" }}>
+                        <label htmlFor="visualization-mode">Select Visualization: </label>
+                        <select id="visualization-mode" value={visualizationMode} onChange={(e) => setVisualizationMode(e.target.value)}>
+                            <option value="interaction">Interaction Effects</option>
+                            <option value="best_gcm">Best GCM</option>
+                            <option value="best_rcm">Best RCM</option>
+                            <option value="gcm_filter">GCM Filter</option>
+                            <option value="rcm_filter">RCM Filter</option>
+                        </select>
+
+                        {/* GCM Filter dropdown */}
+                        {visualizationMode === "gcm_filter" && (
+                            <div style={{ marginTop: "10px" }}>
+                                <label htmlFor="gcm-filter-select">Select GCM Model: </label>
                                 <select
-                                    id="metric-select"
-                                    value={selectedMetric}
-                                    onChange={(e) => {
-                                        const metric = e.target.value;
-                                        setSelectedMetric(metric);
-                                        setMapKey((prev) => prev + 1); // Force map refresh
-                                    }}
+                                    id="gcm-filter-select"
+                                    value={selectedGCMFilter}
+                                    onChange={(e) => setSelectedGCMFilter(e.target.value)}
                                 >
-                                    <option value="">-- Choose a Metric --</option>
-                                    {availableMetrics.map(metric => (
-                                        <option key={metric} value={metric}>{metric}</option>
+                                    <option value="">-- Choose a GCM --</option>
+                                    {[...new Set(Object.values(equivalentBestGCMs).flat())].map(gcm => (
+                                        <option key={gcm} value={gcm}>{gcm}</option>
                                     ))}
                                 </select>
+                            </div>
+                        )}
 
-
-                                {selectedMetric && (
-                                    <div>
-                                        <p>Selected Metric: {selectedMetric}</p>
-                                        <label htmlFor="visualization-mode">Select Visualization: </label>
-                                        <select id="visualization-mode" value={visualizationMode} onChange={(e) => setVisualizationMode(e.target.value)}>
-                                            <option value="interaction">Interaction Effects</option>
-                                            <option value="best_gcm">Best GCM</option>
-                                            <option value="best_rcm">Best RCM</option>
-                                            <option value="gcm_filter">GCM Filter</option>
-                                            <option value="rcm_filter">RCM Filter</option>
-                                        </select>
-
-                                        {/* GCM Filter dropdown */}
-                                        {visualizationMode === "gcm_filter" && (
-                                            <div style={{ marginTop: "10px" }}>
-                                                <label htmlFor="gcm-filter-select">Select GCM Model: </label>
-                                                <select
-                                                    id="gcm-filter-select"
-                                                    value={selectedGCMFilter}
-                                                    onChange={(e) => setSelectedGCMFilter(e.target.value)}
-                                                >
-                                                    <option value="">-- Choose a GCM --</option>
-                                                    {[...new Set(Object.values(equivalentBestGCMs).flat())].map(gcm => (
-                                                        <option key={gcm} value={gcm}>{gcm}</option>
-                                                    ))}
-                                                </select>
-                                            </div>
-                                        )}
-
-                                        {/* RCM Filter dropdown */}
-                                        {visualizationMode === "rcm_filter" && (
-                                            <div style={{ marginTop: "10px" }}>
-                                                <label htmlFor="rcm-filter-select">Select RCM Model: </label>
-                                                <select
-                                                    id="rcm-filter-select"
-                                                    value={selectedRCMFilter}
-                                                    onChange={(e) => setSelectedRCMFilter(e.target.value)}
-                                                >
-                                                    <option value="">-- Choose a RCM --</option>
-                                                    {[...new Set(Object.values(equivalentBestRCMs).flat())].map(rcm => (
-                                                        <option key={rcm} value={rcm}>{rcm}</option>
-                                                    ))}
-                                                </select>
-                                            </div>
-                                        )}
-
-
-                                    </div>
-                                )}
-
-
+                        {/* RCM Filter dropdown */}
+                        {visualizationMode === "rcm_filter" && (
+                            <div style={{ marginTop: "10px" }}>
+                                <label htmlFor="rcm-filter-select">Select RCM Model: </label>
+                                <select
+                                    id="rcm-filter-select"
+                                    value={selectedRCMFilter}
+                                    onChange={(e) => setSelectedRCMFilter(e.target.value)}
+                                >
+                                    <option value="">-- Choose a RCM --</option>
+                                    {[...new Set(Object.values(equivalentBestRCMs).flat())].map(rcm => (
+                                        <option key={rcm} value={rcm}>{rcm}</option>
+                                    ))}
+                                </select>
                             </div>
                         )}
                     </div>
@@ -274,28 +345,34 @@ function App() {
 
                 {/* Interaction Effects */}
                 {visualizationMode === "interaction" && fileData && fileData.map((point, index) => (
-                    <CircleMarker key={index} center={[point.latitude, point.longitude]} radius={4}
+                    <CircleMarker key={`${point.region || 'unknown'}-${point.Gridpoint}-${index}`} center={[point.latitude, point.longitude]} radius={4}
                         fillColor={point.Interaction_effect ? "yellow" : point.GCM_effect && point.RCM_effect ? "purple" : point.GCM_effect ? "blue" : point.RCM_effect ? "red" : "green"}
                         fillOpacity={1} stroke={false}>
                         <Tooltip>
-                            Gridpoint: {point.Gridpoint}<br />
-                            GCM Effect: {point.GCM_effect}<br />
-                            RCM Effect: {point.RCM_effect}<br />
-                            Interaction Effect: {point.Interaction_effect}
+                            <div>
+                                <strong>Region:</strong> {point.region || "N/A"}<br />
+                                <strong>Gridpoint:</strong> {point.Gridpoint}<br />
+                                <strong>GCM Effect:</strong> {point.GCM_effect}<br />
+                                <strong>RCM Effect:</strong> {point.RCM_effect}<br />
+                                <strong>Interaction Effect:</strong> {point.Interaction_effect}
+                            </div>
                         </Tooltip>
                     </CircleMarker>
                 ))}
 
                 {/* Best GCM Models */}
                 {visualizationMode === "best_gcm" && bestModelsData && bestModelsData.map((point, index) => {
-                    const equivalents = equivalentBestGCMs[point.Gridpoint?.toString()] || [];
+                    // Use region-gridpoint composite key to handle overlapping gridpoint IDs
+                    const key = point.region ? `${point.region}-${point.Gridpoint}` : point.Gridpoint?.toString();
+                    const equivalents = equivalentBestGCMs[key] || [];
 
                     return (
-                        <CircleMarker key={index} center={[point.latitude, point.longitude]} radius={4}
+                        <CircleMarker key={`gcm-${point.region || 'unknown'}-${point.Gridpoint}-${index}`} center={[point.latitude, point.longitude]} radius={4}
                             fillColor={gcmColorMap[point.Best_GCM] || "gray"}
                             fillOpacity={1} stroke={false}>
                             <Tooltip>
                                 <div>
+                                    <strong>Region:</strong> {point.region || "N/A"}<br />
                                     <strong>Gridpoint:</strong> {point.Gridpoint}<br />
                                     <strong>Best GCM:</strong> {point.Best_GCM}<br />
                                     <strong>Equivalent Best GCMs:</strong>
@@ -313,14 +390,17 @@ function App() {
 
                 {/* Best RCM Models */}
                 {visualizationMode === "best_rcm" && bestModelsData && bestModelsData.map((point, index) => {
-                    const equivalents = equivalentBestRCMs[point.Gridpoint?.toString()] || [];
+                    // Use region-gridpoint composite key to handle overlapping gridpoint IDs
+                    const key = point.region ? `${point.region}-${point.Gridpoint}` : point.Gridpoint?.toString();
+                    const equivalents = equivalentBestRCMs[key] || [];
 
                     return (
-                        <CircleMarker key={index} center={[point.latitude, point.longitude]} radius={4}
+                        <CircleMarker key={`rcm-${point.region || 'unknown'}-${point.Gridpoint}-${index}`} center={[point.latitude, point.longitude]} radius={4}
                             fillColor={rcmColorMap[point.Best_RCM] || "gray"}
                             fillOpacity={1} stroke={false}>
                             <Tooltip>
                                 <div>
+                                    <strong>Region:</strong> {point.region || "N/A"}<br />
                                     <strong>Gridpoint:</strong> {point.Gridpoint}<br />
                                     <strong>Best RCM:</strong> {point.Best_RCM}<br />
                                     <strong>Equivalent Best RCMs:</strong>
@@ -338,12 +418,14 @@ function App() {
 
                 {/* GCM Filter */}
                 {visualizationMode === "gcm_filter" && selectedGCMFilter && bestModelsData && bestModelsData.map((point, index) => {
-                    const equivalents = equivalentBestGCMs[point.Gridpoint?.toString()] || [];
+                    // Use region-gridpoint composite key to handle overlapping gridpoint IDs
+                    const key = point.region ? `${point.region}-${point.Gridpoint}` : point.Gridpoint?.toString();
+                    const equivalents = equivalentBestGCMs[key] || [];
                     const isMatch = equivalents.includes(selectedGCMFilter);
 
                     return isMatch ? (
                         <CircleMarker
-                            key={index}
+                            key={`gcm-filter-${point.region || 'unknown'}-${point.Gridpoint}-${index}`}
                             center={[point.latitude, point.longitude]}
                             radius={5}
                             fillColor={"orange"}
@@ -351,8 +433,11 @@ function App() {
                             stroke={false}
                         >
                             <Tooltip>
-                                Gridpoint: {point.Gridpoint}<br />
-                                This GCM is among the statistically best.
+                                <div>
+                                    <strong>Region:</strong> {point.region || "N/A"}<br />
+                                    <strong>Gridpoint:</strong> {point.Gridpoint}<br />
+                                    This GCM is among the statistically best.
+                                </div>
                             </Tooltip>
                         </CircleMarker>
                     ) : null;
@@ -360,12 +445,14 @@ function App() {
 
             {/* RCM Filter */}
             {visualizationMode === "rcm_filter" && selectedRCMFilter && bestModelsData && bestModelsData.map((point, index) => {
-                const equivalents = equivalentBestRCMs[point.Gridpoint?.toString()] || [];
+                // Use region-gridpoint composite key to handle overlapping gridpoint IDs
+                const key = point.region ? `${point.region}-${point.Gridpoint}` : point.Gridpoint?.toString();
+                const equivalents = equivalentBestRCMs[key] || [];
                 const isMatch = equivalents.includes(selectedRCMFilter);
 
                 return isMatch ? (
                     <CircleMarker
-                        key={index}
+                        key={`rcm-filter-${point.region || 'unknown'}-${point.Gridpoint}-${index}`}
                         center={[point.latitude, point.longitude]}
                         radius={5}
                         fillColor={"orange"}
@@ -373,8 +460,11 @@ function App() {
                         stroke={false}
                     >
                         <Tooltip>
-                            Gridpoint: {point.Gridpoint}<br />
-                            This RCM is among the statistically best.
+                            <div>
+                                <strong>Region:</strong> {point.region || "N/A"}<br />
+                                <strong>Gridpoint:</strong> {point.Gridpoint}<br />
+                                This RCM is among the statistically best.
+                            </div>
                         </Tooltip>
                     </CircleMarker>
                 ) : null;
