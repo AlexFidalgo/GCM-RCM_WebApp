@@ -6,11 +6,28 @@ Running on EC2
 
     http://3.80.122.246:5173/
 
+    cd C:\Users\AlexFidalgoZamikhows\aws_stuff
     ssh -i "flask-key.pem" ec2-user@ec2-3-80-122-246.compute-1.amazonaws.com
 
     docker-compose up --build
     docker-compose up -d --build
 
+After changes to the code
+    docker compose up -d --build
+    What it does:
+        (A) Rebuilds images only if needed
+            Docker checks whether files in the build context have changed.
+            If yes: it rebuilds the image.
+            If no: it skips the rebuild (fast).
+        (B) Starts containers
+            If containers already exist, Docker recreates them with the newly built image.
+            If they don’t exist, it creates new ones.
+Go with 
+    ```
+    docker-compose down
+    docker-compose build
+    docker-compose up -d
+    ```
 
 Running locally
 
